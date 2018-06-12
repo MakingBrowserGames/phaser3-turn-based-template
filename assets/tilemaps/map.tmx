@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" tiledversion="1.1.5" orientation="orthogonal" renderorder="right-down" width="20" height="20" tilewidth="16" tileheight="16" infinite="0" nextobjectid="1">
+ <tileset firstgid="1" name="tiles" tilewidth="16" tileheight="16" tilecount="104" columns="8">
+  <image source="../Documents/localServer/alterra/assets/tiles.png" width="128" height="208"/>
+  <tile id="4">
+   <properties>
+    <property name="collide" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="5">
+   <properties>
+    <property name="collide" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="6">
+   <properties>
+    <property name="collide" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="12">
+   <properties>
+    <property name="collide" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="14">
+   <properties>
+    <property name="collide" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="20">
+   <properties>
+    <property name="collide" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="21">
+   <properties>
+    <property name="collide" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="22">
+   <properties>
+    <property name="collide" type="bool" value="true"/>
+   </properties>
+  </tile>
+ </tileset>
+ <layer name="background" width="20" height="20">
+  <data encoding="csv">
+5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,7,
+13,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,15,
+13,47,47,47,47,47,47,47,47,47,47,5,6,6,6,6,6,7,47,15,
+13,47,47,47,5,6,6,7,47,47,47,13,47,47,47,47,47,15,47,15,
+13,47,47,47,13,47,47,15,47,47,47,13,47,47,47,47,47,15,47,15,
+13,47,47,47,13,47,47,15,47,47,47,13,47,47,47,47,47,15,47,15,
+13,47,47,47,13,47,47,15,47,47,47,13,47,47,47,47,47,15,47,15,
+13,47,47,47,21,22,22,23,47,47,47,21,22,22,22,22,22,23,47,15,
+13,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,15,
+13,47,5,6,7,47,47,47,47,47,47,47,47,47,47,47,47,47,47,15,
+13,47,13,47,15,47,47,47,47,47,47,47,47,47,47,47,47,47,47,15,
+13,47,21,22,23,47,47,47,46,46,46,46,46,46,46,46,46,46,47,15,
+13,47,47,47,47,47,47,47,5,6,6,6,6,6,6,6,7,47,47,15,
+13,47,47,47,47,47,47,47,13,47,47,47,47,47,47,47,15,47,47,15,
+13,47,47,46,46,46,47,47,13,47,47,47,47,47,47,47,15,47,47,15,
+13,47,5,6,6,7,47,47,13,47,47,47,47,47,47,47,15,47,47,15,
+13,47,21,22,22,23,47,47,21,22,22,22,22,22,22,22,23,47,47,15,
+13,47,47,46,46,46,47,47,47,47,47,47,47,47,47,47,47,47,47,15,
+13,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,47,15,
+21,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,23
+</data>
+ </layer>
+</map>

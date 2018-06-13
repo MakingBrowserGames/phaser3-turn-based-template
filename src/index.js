@@ -1,5 +1,7 @@
-import 'phaser';
-import Game from './scenes';
+
+// Be sure to include in final build, using CDN for now until I figure out how to split code in webpack
+// import 'phaser';
+import Game from './scenes/game';
 
 
 const config = {

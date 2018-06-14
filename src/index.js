@@ -9,7 +9,7 @@ const config = {
     type: Phaser.WEBGL,
     width: 16*20,
     height: 16*20,
-    parent: 'game',
+    parent: 'content',
     scene: [
       Game
     ],

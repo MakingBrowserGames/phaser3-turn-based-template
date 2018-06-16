@@ -1,7 +1,7 @@
 
 // Be sure to include in final build, using CDN for now until I figure out how to split code in webpack
 // import 'phaser';
-import Game from './scenes/game';
+import GameScene from './scenes/game';
 
 
 const config = {
@@ -9,9 +9,9 @@ const config = {
     type: Phaser.WEBGL,
     width: 16*20,
     height: 16*20,
-    parent: 'content',
+    parent: 'game',
     scene: [
-      Game
+      GameScene
     ],
     pixelArt: true,
     zoom: 3

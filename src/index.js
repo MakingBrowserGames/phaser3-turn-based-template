@@ -17,7 +17,7 @@ const config = {
       TBS
     ],
     pixelArt: true,
-    zoom: 3
+    zoom: 2.5
 };
 
 

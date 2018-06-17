@@ -11,10 +11,9 @@ class TBS extends Phaser.Scene {
   //TODO: Implement a boot scene similar to nkholski's Bootscene. Ensure all files loaded
 
   preload() {
-    console.log('preload, this:');
-    console.log(this);
+
     this.load.image('tileset', '../assets/images/gridtiles.png');
-    this.load.tilemapTiledJSON('map', '../assets/tilemaps/map.json');
+    this.load.tilemapTiledJSON('map', '../assets/tilemaps/mapv2.json');
     // player animations atlas
     this.load.atlas('player', '../assets/images/player.png', '../assets/images/player.json');
 
@@ -37,14 +36,15 @@ class TBS extends Phaser.Scene {
 
     // TODO: Update bounds to a variable set to the map or other built-in function
     this.camera = this.cameras.main;
-    this.camera.setBounds(0, 0, 16*20, 16*20);
+    this.camera.setBounds(0, 0, 20*20, 20*20);
 
 
-    var hero = this.add.sprite(48, 48, 'player');
+    var hero = this.physics.add.sprite(48, 48, 'player');
 
     hero.setDepth(1);
     hero.setOrigin(0,0);
-    this.camera.startFollow(hero);
+    // // Camera to follow the hero
+    // this.camera.startFollow(hero);
     this.player = hero;
 
     // Display map
@@ -54,11 +54,20 @@ class TBS extends Phaser.Scene {
     // The first parameter is the name of the tileset in Tiled and the second parameter is the key
     // of the tileset image used when loading the file in preload.
     var tiles = this.map.addTilesetImage('tiles', 'tileset');
-    this.map.createStaticLayer(0, tiles, 0,0);
+    this.map.createStaticLayer('groundLayer', tiles, 0,0);
+    collisionObjects = this.map.createStaticLayer('collisionLayer', tiles, 0,0);
+
+    this.player.setCollideWorldBounds(true);
+    collisionObjects.setCollisionByExclusion([-1]);
+    this.physics.add.collider(collisionObjects, this.player);
 
 
-    // Custom collisionObjects
-    collisionObjects = this.physics.add.staticGroup;
+    // ******** To be updated to physics
+    collisionObjects.setCollisionByProperty({ collides: true });
+    // var slopeMap = { 5: 1, 6: 1, 7: 1, 13: 1, 15: 1, 21: 1, 22: 1, 23: 1 };
+    console.log('phyiscs', this.physics);
+    console.log('player', this.player);
+    // this.physics.world.collideSpriteVsTilemapLayer(this.player, collisionObjects);
 
 
 
@@ -78,43 +87,55 @@ class TBS extends Phaser.Scene {
         for(var x = 0; x < this.map.width; x++){
             // In each cell we store the ID of the tile, which corresponds
             // to its index in the tileset of the map ("ID" field in Tiled)
-            col.push(this.getTileID(x,y));
+
+            if (this.getTileID(x,y) === null) {
+              console.log('Null Value detected!!!');
+            } else {
+              col.push(this.getTileID(x,y));
+            }
+
         }
         grid.push(col);
     }
     this.finder.setGrid(grid);
     console.table(grid);
-
+    console.log(this.map);
     var tileset = this.map.tilesets[0];
     var properties = tileset.tileProperties;
+    console.log('properties: ', properties);
     var acceptableTiles = [];
 
     // We need to list all the tile IDs that can be walked on. Let's iterate over all of them
     // and see what properties have been entered in Tiled.
+
     for(var i = tileset.firstgid-1; i < tiles.total; i++){ // firstgid and total are fields from Tiled that indicate the range of IDs that the tiles can take in that tileset
         if(!properties.hasOwnProperty(i)) {
             // If there is no property indicated at all, it means it's a walkable tile
-            acceptableTiles.push(i+1);
+            // if(!properties[i].collides) acceptableTiles.push(i+1);
+            acceptableTiles.push(i+1)
             continue;
         }
-        if(!properties[i].collide) acceptableTiles.push(i+1);
-        if(properties[i].cost) this.finder.setTileCost(i+1, properties[i].cost); // If there is a cost attached to the tile, let's register it
+        //TODO: If there are multiple properties, need to check just for 'collides' in the future
+
+        // if(properties[i].cost) this.finder.setTileCost(i+1, properties[i].cost); // If there is a cost attached to the tile, let's register it
     }
     this.finder.setAcceptableTiles(acceptableTiles);
 
+    // for(var i = tileset.firstgid-1; i < tiles.total; i++){ // firstgid and total are fields from Tiled that indicate the range of IDs that the tiles can take in that tileset
+    //     if(properties.hasOwnProperty(i)) {
+    //         // If there is no property indicated at all, it means it's a walkable tile
+    //         acceptableTiles.push(i+1);
+    //         console.log(i);
+    //         continue;
+    //     }
+    //     if(!properties[i].collides) acceptableTiles.push(i+1);
+    //     if(properties[i].cost) this.finder.setTileCost(i+1, properties[i].cost); // If there is a cost attached to the tile, let's register it
+    //     console.log(i);
+    // }
+    // this.finder.setAcceptableTiles(acceptableTiles);
+
     console.log(acceptableTiles);
 
-    // // Controls set up
-    // var cursors = this.input.keyboard.createCursorKeys();
-    // var controlConfig = {
-    // camera: this.cameras.main,
-    // left: cursors.left,
-    // right: cursors.right,
-    // up: cursors.up,
-    // down: cursors.down,
-    // speed: 0.5
-    // }
-    // var controls = new Phaser.Cameras.Controls.Fixed(controlConfig);
 
     this.keys = {
     up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
@@ -123,14 +144,13 @@ class TBS extends Phaser.Scene {
     down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN)
     };
 
-    //
     this.player.anims.play('walkDown', true); // walk down
-
   }
 
 
 
   update() {
+
     var worldPoint = this.input.activePointer.positionToCamera(this.cameras.main);
 
     // Rounds down to nearest tile
@@ -144,38 +164,24 @@ class TBS extends Phaser.Scene {
 
         this.player.anims.play('walkLeft', true); // walk left
         this.handleKeyMove('left');
-    };
-    if (this.keys.right.isDown) {
+    } else if (this.keys.right.isDown) {
 
         this.player.anims.play('walkRight', true);
         this.handleKeyMove('right');
-    };
-    if (this.keys.up.isDown) {
+    } else if (this.keys.up.isDown) {
 
         this.player.anims.play('walkUp', true);
         this.handleKeyMove('up');
-    };
-    if (this.keys.down.isDown) {
+    } else if (this.keys.down.isDown) {
 
         this.player.anims.play('walkDown', true);
         this.handleKeyMove('down');
+    } else {
+      this.player.setVelocityY(0);
+      this.player.setVelocityX(0);
+      // TODO: write if statement to walkdown plays if not tweening from the mouse input pathfinding
+      // this.player.anims.play('walkDown', true);
     };
-
-    // if (this.keys.left.isUp) {
-    //
-    //     this.snapGridPosition()
-    // } else if (this.keys.right.isUp) {
-    //     this.snapGridPosition()
-    //
-    // } else if (this.keys.up.isUp) {
-    //
-    //     this.snapGridPosition()
-    // } else if (this.keys.down.isUp) {
-    //
-    //     this.snapGridPosition()
-    // } else {
-    //     // this.player.anims.play('idle', true);
-    // }
 
   };
 
@@ -190,8 +196,13 @@ class TBS extends Phaser.Scene {
   };
 
   getTileID(x,y) {
-      var tile = this.map.getTileAt(x, y);
-      return tile.index;
+      var tile = this.map.getTileAt(x, y, false, 'collisionLayer');
+      if (tile === null) {
+        return 1;
+      } else {
+        return tile.index;
+      }
+
   };
 
   handleClick(pointer) {
@@ -220,7 +231,7 @@ class TBS extends Phaser.Scene {
 
   moveCharacter(path){
     var mainCharacterTweens = this.tweens.getTweensOf(this.player);
-
+    console.log(mainCharacterTweens);
     if (mainCharacterTweens.length > 0) {
       return
     } else {
@@ -345,53 +356,18 @@ class TBS extends Phaser.Scene {
     var toY = Math.floor(y/16);
     var fromX = Math.floor(this.player.x/16);
     var fromY = Math.floor(this.player.y/16);
-    console.log('going from ('+fromX+','+fromY+') to ('+toX+','+toY+')');
+    // console.log('going from ('+fromX+','+fromY+') to ('+toX+','+toY+')');
 
     if (pointer === 'left') {
-      console.log('left');
-      toX++;
-      var collision = this.checkCollision(toX, toY);
-      if (collision !== true) {
-        this.player.x = this.player.x - 1;
-      } else {
-        console.log('collision detected!!');
-      }
+      this.player.setVelocityX(-150);
     } else if (pointer === 'right') {
-      var collision = this.checkCollision(toX, toY);
-      if (collision !== true) {
-        this.player.x = this.player.x + 1;
-      } else {
-        console.log('collision detected!!');
-      }
+      this.player.setVelocityX(+150);
     } else if (pointer === 'up') {
-      toY++;
-      var collision = this.checkCollision(toX, toY);
-      if (collision !== true) {
-        this.player.y = this.player.y - 1;
-      } else {
-        console.log('collision detected!!');
-      }
-
+      this.player.setVelocityY(-150);
     } else if (pointer === 'down') {
-      var collision = this.checkCollision(toX, toY);
-      if (collision !== true) {
-        this.player.y = this.player.y + 1;
-      } else {
-        console.log('collision detected!!');
-      }
+      this.player.setVelocityY(+150);
     }
 
-
-    // console.log('going from ('+fromX+','+fromY+') to ('+toX+','+toY+')');
-    //
-    // this.finder.findPath(fromX, fromY, toX, toY, path => {
-    //     if (path === null) {
-    //         console.warn("Path was not found.");
-    //     } else {
-    //         this.moveCharacterKeyboard(path, pointer);
-    //     }
-    // });
-    // this.finder.calculate(); // don't forget, otherwise nothing happens
   };
 
   snapGridPosition () {

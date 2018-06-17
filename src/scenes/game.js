@@ -1,10 +1,10 @@
 import makeAnimations from '../animations/heroAnimations';
 
 
-class Game extends Phaser.Scene {
+class TBS extends Phaser.Scene {
   constructor(test) {
       super({
-          key: 'Game'
+          key: 'TBS'
       });
   }
 
@@ -29,6 +29,8 @@ class Game extends Phaser.Scene {
   }
 
   create() {
+    var collisionObjects;
+
     // Handles the clicks on the map to make the character move
     this.input.on('pointerup',this.handleClick);
 
@@ -53,6 +55,12 @@ class Game extends Phaser.Scene {
     // of the tileset image used when loading the file in preload.
     var tiles = this.map.addTilesetImage('tiles', 'tileset');
     this.map.createStaticLayer(0, tiles, 0,0);
+
+
+    // Custom collisionObjects
+    collisionObjects = this.physics.add.staticGroup;
+
+
 
     // Marker that will follow the mouse, defines a line and places it a 0,0
     this.marker = this.add.graphics();
@@ -94,7 +102,7 @@ class Game extends Phaser.Scene {
     }
     this.finder.setAcceptableTiles(acceptableTiles);
 
-
+    console.log(acceptableTiles);
 
     // // Controls set up
     // var cursors = this.input.keyboard.createCursorKeys();
@@ -136,23 +144,37 @@ class Game extends Phaser.Scene {
 
         this.player.anims.play('walkLeft', true); // walk left
         this.handleKeyMove('left');
-    } else if (this.keys.right.isDown) {
+    };
+    if (this.keys.right.isDown) {
 
         this.player.anims.play('walkRight', true);
         this.handleKeyMove('right');
-    } else if (this.keys.up.isDown) {
+    };
+    if (this.keys.up.isDown) {
 
         this.player.anims.play('walkUp', true);
         this.handleKeyMove('up');
-    } else if (this.keys.down.isDown) {
+    };
+    if (this.keys.down.isDown) {
 
         this.player.anims.play('walkDown', true);
         this.handleKeyMove('down');
-    } else {
-        // this.player.anims.play('idle', true);
-    }
-    // if (game.anims.walkingAnimation === null) {
-    //   Game.player.anims.play('idle');
+    };
+
+    // if (this.keys.left.isUp) {
+    //
+    //     this.snapGridPosition()
+    // } else if (this.keys.right.isUp) {
+    //     this.snapGridPosition()
+    //
+    // } else if (this.keys.up.isUp) {
+    //
+    //     this.snapGridPosition()
+    // } else if (this.keys.down.isUp) {
+    //
+    //     this.snapGridPosition()
+    // } else {
+    //     // this.player.anims.play('idle', true);
     // }
 
   };
@@ -173,24 +195,8 @@ class Game extends Phaser.Scene {
   };
 
   handleClick(pointer) {
-      var x;
-      var y;
-      if (pointer === 'left') {
-        x = this.player.x - 16;
-        y = this.player.y;
-      } else if (pointer === 'right') {
-        x = this.player.x + 16;
-        y = this.player.y;
-      } else if (pointer === 'up') {
-        x = this.player.x;
-        y = this.player.y - 16;
-      } else if (pointer === 'down') {
-        x = this.player.x;
-        y = this.player.y + 16;
-      } else {
         var x = this.scene.camera.scrollX + pointer.position.x;
         var y = this.scene.camera.scrollY + pointer.position.y;
-      }
       // TODO: Confirm this.scene and pointer.position are correct, figure out why I need to add scene and not just reference this. It has to do with scoping somehow, but unsure why create, preload, and update don't have this issue.
       var currentScene = this.scene;
 
@@ -311,18 +317,17 @@ class Game extends Phaser.Scene {
       };
       this.player.anims.play('walkingAnimation', true);
 
-      currentScene.tweens.timeline(
-      {
+      currentScene.tweens.timeline({
           tweens: tweens
       });
       this.anims.remove('walkingAnimation');
     };
   }
 
-
   handleKeyMove(pointer) {
     var x;
     var y;
+    var currentScene = this;
     if (pointer === 'left') {
       x = this.player.x - 16;
       y = this.player.y;
@@ -336,169 +341,123 @@ class Game extends Phaser.Scene {
       x = this.player.x;
       y = this.player.y + 16;
     }
-
     var toX = Math.floor(x/16);
     var toY = Math.floor(y/16);
     var fromX = Math.floor(this.player.x/16);
     var fromY = Math.floor(this.player.y/16);
     console.log('going from ('+fromX+','+fromY+') to ('+toX+','+toY+')');
 
-    this.finder.findPath(fromX, fromY, toX, toY, path => {
-        if (path === null) {
-            console.warn("Path was not found.");
-        } else {
-            this.moveCharacterKeyboard(path);
-        }
-    });
-    this.finder.calculate(); // don't forget, otherwise nothing happens
+    if (pointer === 'left') {
+      console.log('left');
+      toX++;
+      var collision = this.checkCollision(toX, toY);
+      if (collision !== true) {
+        this.player.x = this.player.x - 1;
+      } else {
+        console.log('collision detected!!');
+      }
+    } else if (pointer === 'right') {
+      var collision = this.checkCollision(toX, toY);
+      if (collision !== true) {
+        this.player.x = this.player.x + 1;
+      } else {
+        console.log('collision detected!!');
+      }
+    } else if (pointer === 'up') {
+      toY++;
+      var collision = this.checkCollision(toX, toY);
+      if (collision !== true) {
+        this.player.y = this.player.y - 1;
+      } else {
+        console.log('collision detected!!');
+      }
+
+    } else if (pointer === 'down') {
+      var collision = this.checkCollision(toX, toY);
+      if (collision !== true) {
+        this.player.y = this.player.y + 1;
+      } else {
+        console.log('collision detected!!');
+      }
+    }
+
+
+    // console.log('going from ('+fromX+','+fromY+') to ('+toX+','+toY+')');
+    //
+    // this.finder.findPath(fromX, fromY, toX, toY, path => {
+    //     if (path === null) {
+    //         console.warn("Path was not found.");
+    //     } else {
+    //         this.moveCharacterKeyboard(path, pointer);
+    //     }
+    // });
+    // this.finder.calculate(); // don't forget, otherwise nothing happens
   };
 
-  moveCharacterKeyboard(path){
+  snapGridPosition () {
     var mainCharacterTweens = this.tweens.getTweensOf(this.player);
 
     if (mainCharacterTweens.length > 0) {
-      console.log('running already');
+      return
     } else {
-      console.log('not running');
-
       var currentScene = this;
-      // Sets up a list of tweens, one for each tile to walk, that will be chained by the timeline
+      var currentPositionX = this.player.x;
+      var currentPositionY = this.player.y;
+      var toCalculateX = (Math.floor(this.player.x/16) * 16);
+      var toCalculateY = (Math.floor(this.player.y/16) * 16);
+
+      var toX = Math.floor(currentPositionX/16);
+      var toY = Math.floor(currentPositionY/16);
+      var fromX = Math.floor(this.player.x/16);
+      var fromY = Math.floor(this.player.y/16);
+
       var tweens = [];
-      var intervalCounter = 0;
-      var directionLog = [];
 
-      for(var i = 0; i < path.length-1; i++){
-        var ex = path[i+1].x;
-        var ey = path[i+1].y;
+      if (currentPositionX !== toCalculateX) {
+        console.log('X not aligned!!');
+        console.log(this.player.x);
+        console.log(toCalculateX);
         tweens.push({
-            targets: currentScene.player,
-            x: {value: ex*this.map.tileWidth, duration: 260},
-            y: {value: ey*this.map.tileHeight, duration: 260}
+            targets: this.player,
+            x: {value: toCalculateX, duration: 150}
         });
-        intervalCounter++;
 
-        let directionX;
-        let directionY;
-
-        directionX = (path[i].x - path[i+1].x);
-        directionY = (path[i].y - path[i+1].y);
-
-        if (directionX > 0) {
-          directionLog.push('left');
-        } else if (directionX < 0) {
-          directionLog.push('right');
-        }
-
-        if (directionY > 0) {
-          directionLog.push('up');
-        } else if (directionY < 0) {
-          directionLog.push('down');
-        }
+      }
+      if (currentPositionY !== toCalculateY) {
+        console.log('Y not aligned!!');
       }
 
-      var walkingAnimation;
-      var frameRateVar = 15;
-
-      for (var i = 0; i < directionLog.length; i++) {
-
-        if (i === 0) {
-          if (directionLog[i] === "up") {
-
-            this.anims.create({
-            key: 'walkingAnimation',
-            frames: this.anims.generateFrameNames('player', {prefix: 'sprite', start: 20, end: 23}),
-            frameRate: frameRateVar
-            });
-            walkingAnimation = this.anims.get('walkingAnimation');
-
-            console.log("going up");
-            console.log('---------<')
-            console.log(walkingAnimation);
-            i++;
-          } else if (directionLog[i] === "down") {
-
-            this.anims.create({
-            key: 'walkingAnimation',
-            frames: this.anims.generateFrameNames('player', {prefix: 'sprite', start: 2, end: 5}),
-            frameRate: frameRateVar
-            });
-            walkingAnimation = this.anims.get('walkingAnimation');
-
-            console.log("going down");
-            i++;
-          } else if (directionLog[i] === "left") {
-
-            this.anims.create({
-            key: 'walkingAnimation',
-            frames: this.anims.generateFrameNames('player', {prefix: 'sprite', start: 8, end: 11}),
-            frameRate: frameRateVar
-            });
-            walkingAnimation = this.anims.get('walkingAnimation');
-
-            console.log("going left");
-            i++;
-          } else if (directionLog[i] === "right") {
-
-            this.anims.create({
-            key: 'walkingAnimation',
-            frames: this.anims.generateFrameNames('player', {prefix: 'sprite', start: 14, end: 17}),
-            frameRate: frameRateVar
-            });
-            walkingAnimation = this.anims.get('walkingAnimation');
-
-            console.log("going right");
-            i++;
-          }
-
-        }
-
-        if (directionLog[i] === "up") {
-          console.log("going up");
-          // var newFrames = this.anims.get('walkUp');
-          var newFrames = this.anims.generateFrameNames('player', {prefix: 'sprite', start: 20, end: 23});
-          walkingAnimation.addFrame(newFrames);
-          console.log(newFrames);
-          console.log(walkingAnimation);
-
-        } else if (directionLog[i] === "down") {
-          // var newFrames = this.anims.get('walkDown');
-          var newFrames = this.anims.generateFrameNames('player', {prefix: 'sprite', start: 2, end: 5});
-          walkingAnimation.addFrame(newFrames);
-          console.log("going down");
-
-        } else if (directionLog[i] === "left") {
-          // var newFrames = this.anims.get('walkLeft');
-          var newFrames = this.anims.generateFrameNames('player', {prefix: 'sprite', start: 8, end: 11});
-          walkingAnimation.addFrame(newFrames);
-          console.log("going left");
-
-        } else if (directionLog[i] === "right") {
-          // var newFrames = this.anims.get('walkRight');
-          var newFrames = this.anims.generateFrameNames('player', {prefix: 'sprite', start: 14, end: 17});
-          walkingAnimation.addFrame(newFrames);
-          console.log("going right");
-        }
-      };
-
-
-      this.player.anims.play('walkingAnimation', true);
-
-
-
-
-      //
-      currentScene.tweens.timeline(
-      {
+      this.tweens.timeline({
           tweens: tweens
       });
-      console.log(path);
-      this.anims.remove('walkingAnimation');
+    }
 
 
-    };
+  }
+
+  moveCharacterKeyboard(path, pointer){
+    //solution 1
+    var mainCharacterTweens = this.tweens.getTweensOf(this.player);
+
+    if (mainCharacterTweens.length > 0) {
+      return
+    } else {
+      var tweens = [];
+      var ex = path[1].x;
+      var ey = path[1].y;
+      tweens.push({
+          targets: this.player,
+          x: {value: ex*this.map.tileWidth, duration: 260},
+          y: {value: ey*this.map.tileHeight, duration: 260}
+      });
+
+      this.tweens.timeline({
+          tweens: tweens
+      });
+    }
 
   }
 
 };
 
-export default Game;
+export default TBS;

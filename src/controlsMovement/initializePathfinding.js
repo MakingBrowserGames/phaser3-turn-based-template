@@ -1,4 +1,4 @@
-export default function pathfinding(currentScene, tiles) {
+export default function initializePathfinding(currentScene, tiles, layerCheckCollision) {
 
   // TODO: create separate file for pathfinding
   // Initializing the pathfinder
@@ -12,10 +12,10 @@ export default function pathfinding(currentScene, tiles) {
           // In each cell we store the ID of the tile, which corresponds
           // to its index in the tileset of the map ("ID" field in Tiled)
 
-          if (currentScene.getTileID(x,y) === null) {
+          if (getTileID(x,y) === null) {
             console.log('Null Value detected!!!');
           } else {
-            col.push(currentScene.getTileID(x,y));
+            col.push(getTileID(x,y));
           }
 
       }
@@ -44,7 +44,13 @@ export default function pathfinding(currentScene, tiles) {
   }
   currentScene.finder.setAcceptableTiles(acceptableTiles);
 
-
-
+  function getTileID(x,y) {
+      var tile = currentScene.map.getTileAt(x, y, false, layerCheckCollision);
+      if (tile === null) {
+        return 1;
+      } else {
+        return tile.index;
+      }
+  };
 
 }

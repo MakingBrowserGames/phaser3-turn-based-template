@@ -1,5 +1,6 @@
 import makeAnimations from '../animations/heroAnimations';
-import pathfinding from '../controlsMovement/pathfinding';
+import initializePathfinding from '../controlsMovement/initializePathfinding';
+import handlePathfinding from '../controlsMovement/handlePathfinding';
 
 
 class TBS extends Phaser.Scene {
@@ -18,7 +19,15 @@ class TBS extends Phaser.Scene {
     this.load.tilemapTiledJSON('map', '../assets/tilemaps/mapv2.json');
 
     // Create atlas of player animations
-    this.load.atlas('player', '../assets/images/player.png', '../assets/images/player.json');
+    if (this.registry.get('charSelection') === 'female') {
+      console.log('female selected!!');
+      this.load.atlas('player', '../assets/images/femaleHero.png', '../assets/images/player.json');
+    } else {
+      console.log('male selected!!!');
+      this.load.atlas('player', '../assets/images/maleHero.png', '../assets/images/player.json');
+    };
+
+    this.load.atlas('enemy', '../assets/images/enemy.png', '../assets/images/player.json');
 
     // prepare all animations, defined in a separate file
     this.load.on('complete', () => {
@@ -33,23 +42,45 @@ class TBS extends Phaser.Scene {
     var collisionObjects;
     var currentScene = this;
     var hero;
+    var enemy;
     var tiles;
+    var layerCheckCollision;
+    console.log(this);
+    console.log(this.scene);
+
+    this.scene.enemyStats = {
+      HP: 100,
+      Attack: 10,
+      Defense: 5,
+      Movement: 5
+    }
+
+    this.scene.heroStats = {
+      HP: 100,
+      Attack: 20,
+      Defense: 5,
+      Movement: 5
+    }
 
 
-    // Handles the clicks on the map to make the character move
-    this.input.on('pointerup',this.handleClick);
 
 
     // TODO: Update bounds to a variable set to the map or other built-in function
     this.camera = this.cameras.main;
-    this.camera.setBounds(0, 0, 20*20, 20*20);
+    this.camera.setBounds(0, 0, 16*20, 16*20);
 
     //TODO: figure out what setDepth does
 
     // Create player controlled character, and align Origin to collide correctly
+
     hero = this.physics.add.sprite(56, 56, 'player');
+    enemy = this.physics.add.sprite(272, 272, 'enemy');
+
     hero.setDepth(1);
+
     hero.setOrigin(0.5,0.5);
+    enemy.setDepth(1);
+    enemy.setOrigin(0,0);
 
     // // Camera to follow the hero
     // this.camera.startFollow(hero);
@@ -68,7 +99,9 @@ class TBS extends Phaser.Scene {
 
     // Display two layers from Tiled file, first parameter is from the JSON file
     this.map.createStaticLayer('groundLayer', tiles, 0,0);
-    collisionObjects = this.map.createStaticLayer('collisionLayer', tiles, 0,0);
+    // Used as input for initializePathfinding to specify which layer to check for collision
+    layerCheckCollision = 'collisionLayer';
+    collisionObjects = this.map.createStaticLayer(layerCheckCollision, tiles, 0,0);
 
 
     //TODO: clean up variable names for layers
@@ -84,8 +117,12 @@ class TBS extends Phaser.Scene {
     this.marker.strokeRect(0, 0, this.map.tileWidth, this.map.tileHeight);
 
     // Initialize pathfiinder and create grid of acceptable tilese
-    pathfinding(currentScene, tiles);
+    initializePathfinding(currentScene, tiles, layerCheckCollision);
 
+
+
+    // Handles the clicks on the map to make the character move
+    this.input.on('pointerup',this.handleClick);
 
     // Setup input keys
     this.keys = {
@@ -97,6 +134,10 @@ class TBS extends Phaser.Scene {
 
     // load initial walking animation
     this.player.anims.play('walkDown', true); // walk down
+    enemy.anims.play('eWalkDown', true); // walk down
+
+    //update registry
+    console.log(this.registry)
   }
 
 
@@ -137,7 +178,7 @@ class TBS extends Phaser.Scene {
       // this.player.anims.play('walkDown', true);
     };
 
-    //TODO: Think of way so it does not have to be in the update function. Clean up code for switch statement or simplify, create function to see what pushed recently or add a listener event
+    //TODO: Think of way so it does not have to be in the update function. Clean up code for switch statement or simplify, create function to see what pushed recently or add a listener event. May be able to use "justDown" from Phaser
     // Checks if the input keys have been pushed recently and runs snapGridPosition to ensure player is aligned to grid
     if (this.keys.left.timeUp > 0) {
       this.snapGridPosition('left');
@@ -180,138 +221,31 @@ class TBS extends Phaser.Scene {
 
   //
   handleClick(pointer) {
-      console.log(this);
-      console.log(this.scene);
-      var x = this.scene.camera.scrollX + pointer.position.x;
-      var y = this.scene.camera.scrollY + pointer.position.y;
-      // TODO: Confirm this.scene and pointer.position are correct, figure out why I need to add scene and not just reference this. It has to do with scoping somehow, but unsure why create, preload, and update don't have this issue.
       var currentScene = this.scene;
+
+      var x = currentScene.camera.scrollX + pointer.position.x;
+      var y = currentScene.camera.scrollY + pointer.position.y;
+      // TODO: Confirm this.scene and pointer.position are correct, figure out why I need to add scene and not just reference this. It has to do with scoping somehow, but unsure why create, preload, and update don't have this issue.
+
 
       var toX = Math.floor(x/16);
       var toY = Math.floor(y/16);
       var fromX = Math.floor(this.scene.player.x/16);
       var fromY = Math.floor(this.scene.player.y/16);
-      console.log('going from ('+fromX+','+fromY+') to ('+toX+','+toY+')');
+      // console.log('going from ('+fromX+','+fromY+') to ('+toX+','+toY+')');
 
-      this.scene.finder.findPath(fromX, fromY, toX, toY, path => {
+      currentScene.finder.findPath(fromX, fromY, toX, toY, path => {
           if (path === null) {
               console.warn("Path was not found.");
           } else {
 
-              currentScene.moveCharacter(path);
+              handlePathfinding(path, currentScene);
               console.log('Path found!!')
           }
       });
-      this.scene.finder.calculate(); // don't forget, otherwise nothing happens
+      currentScene.finder.calculate(); // don't forget, otherwise nothing happens
   };
 
-  moveCharacter(path){
-    var mainCharacterTweens = this.tweens.getTweensOf(this.player);
-    console.log(mainCharacterTweens);
-    if (mainCharacterTweens.length > 0) {
-      return
-    } else {
-      var currentScene = this;
-      // Sets up a list of tweens, one for each tile to walk, that will be chained by the timeline
-      var tweens = [];
-      var intervalCounter = 0;
-      var directionLog = [];
-
-      for(var i = 0; i < path.length-1; i++){
-        var ex = path[i+1].x;
-        var ey = path[i+1].y;
-        tweens.push({
-            targets: currentScene.player,
-            // The +8 is to make up for the setOrigin(.5,.5), this should change if grid width changes
-            //TODO: make variable for gridwidht and take half here to streamline
-            x: {value: ((ex*this.map.tileWidth) + 8), duration: 260},
-            y: {value: ((ey*this.map.tileHeight) + 8), duration: 260}
-        });
-        intervalCounter++;
-
-        let directionX;
-        let directionY;
-
-        directionX = (path[i].x - path[i+1].x);
-        directionY = (path[i].y - path[i+1].y);
-
-        if (directionX > 0) {
-          directionLog.push('left');
-        } else if (directionX < 0) {
-          directionLog.push('right');
-        }
-        if (directionY > 0) {
-          directionLog.push('up');
-        } else if (directionY < 0) {
-          directionLog.push('down');
-        }
-      }
-      var walkingAnimation;
-      var frameRateVar = 15;
-
-      for (var i = 0; i < directionLog.length; i++) {
-        if (i === 0) {
-          if (directionLog[i] === "up") {
-            this.anims.create({
-            key: 'walkingAnimation',
-            frames: this.anims.generateFrameNames('player', {prefix: 'sprite', start: 20, end: 23}),
-            frameRate: frameRateVar
-            });
-            walkingAnimation = this.anims.get('walkingAnimation');
-            i++;
-          } else if (directionLog[i] === "down") {
-            this.anims.create({
-            key: 'walkingAnimation',
-            frames: this.anims.generateFrameNames('player', {prefix: 'sprite', start: 2, end: 5}),
-            frameRate: frameRateVar
-            });
-            walkingAnimation = this.anims.get('walkingAnimation');
-            i++;
-          } else if (directionLog[i] === "left") {
-            this.anims.create({
-            key: 'walkingAnimation',
-            frames: this.anims.generateFrameNames('player', {prefix: 'sprite', start: 8, end: 11}),
-            frameRate: frameRateVar
-            });
-            walkingAnimation = this.anims.get('walkingAnimation');
-            i++;
-          } else if (directionLog[i] === "right") {
-            this.anims.create({
-            key: 'walkingAnimation',
-            frames: this.anims.generateFrameNames('player', {prefix: 'sprite', start: 14, end: 17}),
-            frameRate: frameRateVar
-            });
-            walkingAnimation = this.anims.get('walkingAnimation');
-            i++;
-          }
-        }
-
-        if (directionLog[i] === "up") {
-          // var newFrames = this.anims.get('walkUp');
-          var newFrames = this.anims.generateFrameNames('player', {prefix: 'sprite', start: 20, end: 23});
-          walkingAnimation.addFrame(newFrames);
-        } else if (directionLog[i] === "down") {
-          // var newFrames = this.anims.get('walkDown');
-          var newFrames = this.anims.generateFrameNames('player', {prefix: 'sprite', start: 2, end: 5});
-          walkingAnimation.addFrame(newFrames);
-        } else if (directionLog[i] === "left") {
-          // var newFrames = this.anims.get('walkLeft');
-          var newFrames = this.anims.generateFrameNames('player', {prefix: 'sprite', start: 8, end: 11});
-          walkingAnimation.addFrame(newFrames);
-        } else if (directionLog[i] === "right") {
-          // var newFrames = this.anims.get('walkRight');
-          var newFrames = this.anims.generateFrameNames('player', {prefix: 'sprite', start: 14, end: 17});
-          walkingAnimation.addFrame(newFrames);
-        }
-      };
-      this.player.anims.play('walkingAnimation', true);
-
-      currentScene.tweens.timeline({
-          tweens: tweens
-      });
-      this.anims.remove('walkingAnimation');
-    };
-  }
 
   handleKeyMove(direction) {
     if (direction === 'left') {
@@ -344,8 +278,6 @@ class TBS extends Phaser.Scene {
         var currentPositionY = this.player.y;
         var toCalculateX = ((Math.floor(this.player.x/16) * 16) + 8);
         var toCalculateY = ((Math.floor(this.player.y/16) * 16) + 8);
-        console.log('current Position X: ', currentPositionX);
-        console.log('target Position X: ', toCalculateX);
         var moveToY;
         var moveToX;
         var checkVariable;
@@ -365,7 +297,6 @@ class TBS extends Phaser.Scene {
           }
         };
         if ((direction === 'left') && (currentPositionX > moveToX)) {
-          console.log('check left works!!!!');
           tweens.push({
               targets: this.player,
               x: {value: (moveToX), duration: 100}
@@ -389,7 +320,6 @@ class TBS extends Phaser.Scene {
         };
         // push the target to Tweens and snap to the next tile in specified direction if valid
         if ((direction === 'right') && (currentPositionX < moveToX)) {
-          console.log('check right works!!!!');
           tweens.push({
               targets: this.player,
               x: {value: (moveToX), duration: 100}
@@ -413,7 +343,6 @@ class TBS extends Phaser.Scene {
         };
         // push the target to Tweens and snap to the next tile in specified direction if valid
         if ((direction === 'down') && (currentPositionY < moveToY)) {
-          console.log('check down works!!!!');
           tweens.push({
               targets: this.player,
               y: {value: (moveToY), duration: 100}
@@ -436,13 +365,11 @@ class TBS extends Phaser.Scene {
         };
         // push the target to Tweens and snap to the next tile in specified direction if valid
         if ((direction === 'up') && (currentPositionY > moveToY)) {
-          console.log('check up works!!!!');
           tweens.push({
               targets: this.player,
               y: {value: (moveToY), duration: 100}
           });
         };
-
 
         this.tweens.timeline({
             tweens: tweens

@@ -1,7 +1,10 @@
 
 // Be sure to include in final build, using CDN for now until I figure out how to split code in webpack
 // import 'phaser';
-import TBS from './scenes/game';
+import BootScene from './scenes/BootScene';
+import TitleScene from './scenes/TitleScene';
+import TBS from './scenes/TBS';
+
 
 
 const config = {
@@ -14,10 +17,13 @@ const config = {
     height: 16*20,
     parent: 'game',
     scene: [
+      BootScene,
+      TitleScene,
       TBS
     ],
     pixelArt: true,
-    zoom: 2.5
+    zoom: 2.5,
+    backgroundColor: '#3F7CB6',
 };
 
 

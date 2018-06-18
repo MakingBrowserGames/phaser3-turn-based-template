@@ -21,7 +21,6 @@ class TBS extends Phaser.Scene {
 
     // prepare all animations, defined in a separate file
     this.load.on('complete', () => {
-
       makeAnimations(this);
     });
 
@@ -83,9 +82,87 @@ class TBS extends Phaser.Scene {
     this.marker.lineStyle(3, 0xffffff, 1);
     this.marker.strokeRect(0, 0, this.map.tileWidth, this.map.tileHeight);
 
+    // Initialize pathfiinder and create grid of acceptable tilese
+    this.initializePathfinding(tiles);
 
+
+    // Setup input keys
+    this.keys = {
+    up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
+    left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
+    right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
+    down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN)
+    };
+
+    // load initial walking animation
+    this.player.anims.play('walkDown', true); // walk down
+  }
+
+
+
+  update() {
+
+    // TODO: better understand what this code does, used to create rectangle around square
+
+    var worldPoint = this.input.activePointer.positionToCamera(this.cameras.main);
+
+    // Rounds down to nearest tile
+    var pointerTileX = this.map.worldToTileX(worldPoint.x);
+    var pointerTileY = this.map.worldToTileY(worldPoint.y);
+    this.marker.x = this.map.tileToWorldX(pointerTileX);
+    this.marker.y = this.map.tileToWorldY(pointerTileY);
+    this.marker.setVisible(!this.checkCollision(pointerTileX,pointerTileY));
+
+
+    // ### movement controls
+    if (this.keys.left.isDown) {
+        this.player.anims.play('walkLeft', true); // walk left
+        this.handleKeyMove('left');
+    } else if (this.keys.right.isDown) {
+        this.player.anims.play('walkRight', true);
+        this.handleKeyMove('right');
+    } else if (this.keys.up.isDown) {
+        this.player.anims.play('walkUp', true);
+        this.handleKeyMove('up');
+    } else if (this.keys.down.isDown) {
+        this.player.anims.play('walkDown', true);
+        this.handleKeyMove('down');
+    } else {
+      this.player.setVelocityY(0);
+      this.player.setVelocityX(0);
+
+      // TODO: write if statement to walkdown plays if not tweening from the mouse input pathfinding
+      // this.player.anims.play('walkDown', true);
+    };
+
+    //TODO: clean up code for switch statement or simplify, create function to see what pushed recently or add a listener event
+    // Checks if the input keys have been pushed recently and runs snapGridPosition to ensure player is aligned to grid
+    if (this.keys.left.timeUp > 0) {
+      console.log('left key up');
+      this.snapGridPosition('left');
+      this.keys.left.reset();
+    }
+    if (this.keys.right.timeUp > 0) {
+      console.log('right key up');
+      this.snapGridPosition('right');
+      this.keys.right.reset();
+    }
+    if (this.keys.down.timeUp > 0) {
+      console.log('down key up');
+      this.snapGridPosition('down');
+      this.keys.down.reset();
+    }
+    if (this.keys.up.timeUp > 0) {
+      console.log('up key up');
+      this.snapGridPosition('up');
+      this.keys.up.reset();
+    }
+  };
+
+
+  initializePathfinding(tiles) {
+    var currentScene = this;
     // TODO: create separate file for pathfinding
-    // ### Pathfinding stuff ###
     // Initializing the pathfinder
     this.finder = new EasyStar.js();
 
@@ -129,85 +206,7 @@ class TBS extends Phaser.Scene {
     }
     this.finder.setAcceptableTiles(acceptableTiles);
 
-    // ####### End Pathfinder code ######
-
-    // Setup input keys
-    this.keys = {
-    up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
-    left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
-    right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
-    down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN)
-    };
-
-    // load initial walking animation
-    this.player.anims.play('walkDown', true); // walk down
   }
-
-
-
-  update() {
-
-    // TODO: better understand what this code does, used to create rectangle around square
-
-    var worldPoint = this.input.activePointer.positionToCamera(this.cameras.main);
-
-    // Rounds down to nearest tile
-    var pointerTileX = this.map.worldToTileX(worldPoint.x);
-    var pointerTileY = this.map.worldToTileY(worldPoint.y);
-    this.marker.x = this.map.tileToWorldX(pointerTileX);
-    this.marker.y = this.map.tileToWorldY(pointerTileY);
-    this.marker.setVisible(!this.checkCollision(pointerTileX,pointerTileY));
-
-    //TODO: change to switch statement
-    // ### movement controls
-    if (this.keys.left.isDown) {
-
-        this.player.anims.play('walkLeft', true); // walk left
-        this.handleKeyMove('left');
-    } else if (this.keys.right.isDown) {
-
-        this.player.anims.play('walkRight', true);
-        this.handleKeyMove('right');
-    } else if (this.keys.up.isDown) {
-
-        this.player.anims.play('walkUp', true);
-        this.handleKeyMove('up');
-    } else if (this.keys.down.isDown) {
-
-        this.player.anims.play('walkDown', true);
-        this.handleKeyMove('down');
-    } else {
-      this.player.setVelocityY(0);
-      this.player.setVelocityX(0);
-
-      // TODO: write if statement to walkdown plays if not tweening from the mouse input pathfinding
-      // this.player.anims.play('walkDown', true);
-    };
-
-    //TODO: clean up code for switch statement or simplify, create function to see what pushed recently or add a listener event
-    // Checks if the input keys have been pushed recently and runs snapGridPosition to ensure player is aligned to grid
-    if (this.keys.left.timeUp > 0) {
-      console.log('left key up');
-      this.snapGridPosition('left');
-      this.keys.left.reset();
-    }
-    if (this.keys.right.timeUp > 0) {
-      console.log('right key up');
-      this.snapGridPosition('right');
-      this.keys.right.reset();
-    }
-    if (this.keys.down.timeUp > 0) {
-      console.log('down key up');
-      this.snapGridPosition('down');
-      this.keys.down.reset();
-    }
-    if (this.keys.up.timeUp > 0) {
-      console.log('up key up');
-      this.snapGridPosition('up');
-      this.keys.up.reset();
-    }
-
-  };
 
   // Used by the square mouse function to display if path is valid or not
   checkCollision(x,y) {
@@ -364,40 +363,19 @@ class TBS extends Phaser.Scene {
     };
   }
 
-  handleKeyMove(pointer) {
-    var x;
-    var y;
-    var currentScene = this;
-    if (pointer === 'left') {
-      x = this.player.x - 16;
-      y = this.player.y;
-    } else if (pointer === 'right') {
-      x = this.player.x + 16;
-      y = this.player.y;
-    } else if (pointer === 'up') {
-      x = this.player.x;
-      y = this.player.y - 16;
-    } else if (pointer === 'down') {
-      x = this.player.x;
-      y = this.player.y + 16;
-    }
-    var toX = Math.floor(x/16);
-    var toY = Math.floor(y/16);
-    var fromX = Math.floor(this.player.x/16);
-    var fromY = Math.floor(this.player.y/16);
-    // console.log('going from ('+fromX+','+fromY+') to ('+toX+','+toY+')');
-
-    if (pointer === 'left') {
+  handleKeyMove(direction) {
+    if (direction === 'left') {
       this.player.setVelocityX(-100);
-    } else if (pointer === 'right') {
+    } else if (direction === 'right') {
       this.player.setVelocityX(+100);
-    } else if (pointer === 'up') {
+    } else if (direction === 'up') {
       this.player.setVelocityY(-100);
-    } else if (pointer === 'down') {
+    } else if (direction === 'down') {
       this.player.setVelocityY(+100);
     }
-    // this.snapGridPosition();
   };
+
+
   //TODO: fix input so that while Tweens running, can't change player direction, likely create a function to check if tweens running
   //TODO: Figure out varaible that takes how many pixels different and adjusts the timing of snapgrid to match the current velocity settings. Check how many pixels moved per velocity speed
   snapGridPosition (direction) {
@@ -514,14 +492,6 @@ class TBS extends Phaser.Scene {
               y: {value: (moveToY), duration: 100}
           });
         };
-
-
-
-
-
-
-
-
 
 
         this.tweens.timeline({

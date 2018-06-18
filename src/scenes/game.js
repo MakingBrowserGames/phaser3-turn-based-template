@@ -1,4 +1,5 @@
 import makeAnimations from '../animations/heroAnimations';
+import pathfinding from '../controlsMovement/pathfinding';
 
 
 class TBS extends Phaser.Scene {
@@ -83,7 +84,7 @@ class TBS extends Phaser.Scene {
     this.marker.strokeRect(0, 0, this.map.tileWidth, this.map.tileHeight);
 
     // Initialize pathfiinder and create grid of acceptable tilese
-    this.initializePathfinding(tiles);
+    pathfinding(currentScene, tiles);
 
 
     // Setup input keys
@@ -115,6 +116,7 @@ class TBS extends Phaser.Scene {
 
 
     // ### movement controls
+
     if (this.keys.left.isDown) {
         this.player.anims.play('walkLeft', true); // walk left
         this.handleKeyMove('left');
@@ -135,78 +137,26 @@ class TBS extends Phaser.Scene {
       // this.player.anims.play('walkDown', true);
     };
 
-    //TODO: clean up code for switch statement or simplify, create function to see what pushed recently or add a listener event
+    //TODO: Think of way so it does not have to be in the update function. Clean up code for switch statement or simplify, create function to see what pushed recently or add a listener event
     // Checks if the input keys have been pushed recently and runs snapGridPosition to ensure player is aligned to grid
     if (this.keys.left.timeUp > 0) {
-      console.log('left key up');
       this.snapGridPosition('left');
       this.keys.left.reset();
     }
     if (this.keys.right.timeUp > 0) {
-      console.log('right key up');
       this.snapGridPosition('right');
       this.keys.right.reset();
     }
     if (this.keys.down.timeUp > 0) {
-      console.log('down key up');
       this.snapGridPosition('down');
       this.keys.down.reset();
     }
     if (this.keys.up.timeUp > 0) {
-      console.log('up key up');
       this.snapGridPosition('up');
       this.keys.up.reset();
     }
   };
 
-
-  initializePathfinding(tiles) {
-    var currentScene = this;
-    // TODO: create separate file for pathfinding
-    // Initializing the pathfinder
-    this.finder = new EasyStar.js();
-
-    // We create the 2D array representing all the tiles of our map
-    var grid = [];
-    for(var y = 0; y < this.map.height; y++){
-        var col = [];
-        for(var x = 0; x < this.map.width; x++){
-            // In each cell we store the ID of the tile, which corresponds
-            // to its index in the tileset of the map ("ID" field in Tiled)
-
-            if (currentScene.getTileID(x,y) === null) {
-              console.log('Null Value detected!!!');
-            } else {
-              col.push(currentScene.getTileID(x,y));
-            }
-
-        }
-        grid.push(col);
-    }
-    this.finder.setGrid(grid);
-    console.table(grid);
-
-    var tileset = this.map.tilesets[0];
-    var properties = tileset.tileProperties;
-    var acceptableTiles = [];
-
-    // We need to list all the tile IDs that can be walked on. Let's iterate over all of them
-    // and see what properties have been entered in Tiled.
-
-    for(var i = tileset.firstgid-1; i < tiles.total; i++){ // firstgid and total are fields from Tiled that indicate the range of IDs that the tiles can take in that tileset
-        if(!properties.hasOwnProperty(i)) {
-            // If there is no property indicated at all, it means it's a walkable tile
-            // if(!properties[i].collides) acceptableTiles.push(i+1);
-            acceptableTiles.push(i+1)
-            continue;
-        }
-        //TODO: If there are multiple properties, need to check just for 'collides' in the future
-
-        // if(properties[i].cost) this.finder.setTileCost(i+1, properties[i].cost); // If there is a cost attached to the tile, let's register it
-    }
-    this.finder.setAcceptableTiles(acceptableTiles);
-
-  }
 
   // Used by the square mouse function to display if path is valid or not
   checkCollision(x,y) {
